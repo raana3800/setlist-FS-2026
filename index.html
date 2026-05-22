@@ -2,62 +2,47 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meine Setliste</title>
+    <title>Fërkel Sharky - Setlist</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f4f4f4; }
-        .checkbox-group { display: flex; gap: 5px; justify-content: center; }
-        /* Responsive Anpassung für Handys */
-        @media (max-width: 600px) {
-            th:nth-child(3), td:nth-child(3) { display: none; } /* Versteckt BPM auf sehr kleinen Screens */
-        }
+        :root { --neon-pink: #ff71ce; --dark-bg: #0f0f1b; }
+        body { background-color: var(--dark-bg); color: white; font-family: 'Courier New', monospace; padding: 20px; }
+        header { text-align: center; margin-bottom: 30px; }
+        img { max-width: 250px; filter: drop-shadow(0 0 10px var(--neon-pink)); }
+        table { width: 100%; border-collapse: collapse; background: #1a1a2e; border: 2px solid var(--neon-pink); }
+        th { background: var(--neon-pink); color: var(--dark-bg); padding: 12px; text-transform: uppercase; }
+        td { border: 1px solid #333; padding: 10px; color: #eee; }
+        .checkbox-group { display: flex; gap: 8px; justify-content: center; }
+        input[type="checkbox"] { transform: scale(1.5); accent-color: var(--neon-pink); }
+        @media (max-width: 600px) { th:nth-child(3), td:nth-child(3) { display: none; } }
     </style>
 </head>
 <body>
 
-    <h2>Setliste (80er Jahre Special)</h2>
+    <header>
+        <img src="FS_Logo Kopie2.png" alt="Fërkel Sharky Logo">
+    </header>
+
     <table>
         <thead>
-            <tr>
-                <th>#</th>
-                <th>Titel</th>
-                <th>BPM</th>
-                <th>Check (Arr, Snd, Abl, Dr)</th>
-            </tr>
+            <tr><th>#</th><th>Titel</th><th>BPM</th><th>Check</th></tr>
         </thead>
-        <tbody id="setlist-body">
-            <!-- Die Zeilen werden per JS eingefügt -->
-        </tbody>
+        <tbody id="setlist-body"></tbody>
     </table>
 
     <script>
         const songs = [
-            {titel: "Take On Me", bpm: 169},
-            {titel: "Africa", bpm: 93},
-            {titel: "Billie Jean", bpm: 117},
-            {titel: "Blue Monday", bpm: 130},
-            {titel: "Purple Rain", bpm: 57},
-            {titel: "Sweet Child O' Mine", bpm: 125},
-            {titel: "Everybody Wants To Rule The World", bpm: 112},
-            {titel: "Don't You (Forget About Me)", bpm: 112},
-            {titel: "Smalltown Boy", bpm: 135},
-            {titel: "Tainted Love", bpm: 144}
+            {titel: "Take On Me", bpm: 169}, {titel: "Billie Jean", bpm: 117},
+            {titel: "Girls Just Want To Have Fun", bpm: 120}, {titel: "Tainted Love", bpm: 144},
+            {titel: "Sweet Dreams", bpm: 125}, {titel: "Blue Monday", bpm: 130},
+            {titel: "Purple Rain", bpm: 114}, {titel: "Don't You", bpm: 112},
+            {titel: "Time After Time", bpm: 130}, {titel: "Every Breath You Take", bpm: 117}
         ];
-
         const tbody = document.getElementById('setlist-body');
-        songs.forEach((s, index) => {
-            const row = `<tr>
-                <td>${index + 1}</td>
-                <td>${s.titel}</td>
-                <td>${s.bpm}</td>
-                <td class="checkbox-group">
-                    <input type="checkbox"> <input type="checkbox"> <input type="checkbox"> <input type="checkbox">
-                </td>
+        songs.forEach((s, i) => {
+            tbody.innerHTML += `<tr>
+                <td>${i + 1}</td><td>${s.titel}</td><td>${s.bpm}</td>
+                <td class="checkbox-group"><input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox"></td>
             </tr>`;
-            tbody.innerHTML += row;
         });
     </script>
 </body>
