@@ -89,7 +89,6 @@
             flex-shrink: 0;
         }
 
-        /* Die fortlaufende Nummer vor dem Titel */
         .song-number {
             color: var(--neon-pink);
             font-family: 'Courier New', monospace;
@@ -103,7 +102,7 @@
         .song-title {
             font-size: 1.05em;
             font-weight: 500;
-            white-space: normal; /* Erlaubt Umbruch, falls Nummer + Titel zu lang werden */
+            white-space: normal;
             word-break: break-word;
             color: #fff;
         }
@@ -135,101 +134,4 @@
 <body>
 
     <div class="container">
-        <header>
-            <img src="logo.png" alt="Fërkel Sharky Logo">
-        </header>
-        
-        <h2>Setlist 2026</h2>
-
-        <ul id="setlist-container"></ul>
-    </div>
-
-    <script>
-        const defaultSongs = [
-            {titel: "Take On Me"}, {titel: "Billie Jean"},
-            {titel: "Girls Just Want To Have Fun"}, {titel: "Tainted Love"},
-            {titel: "Sweet Dreams (Are Made of This)"}, {titel: "Blue Monday"},
-            {titel: "Purple Rain"}, {titel: "Don't You (Forget About Me)"},
-            {titel: "Time After Time"}, {titel: "Every Breath You Take"}
-        ];
-
-        const container = document.getElementById('setlist-container');
-        let savedOrder = localStorage.getItem('fs-song-order');
-        let songs = savedOrder ? JSON.parse(savedOrder) : defaultSongs;
-
-        function renderList() {
-            container.innerHTML = "";
-            songs.forEach((s, i) => {
-                const safeTitle = btoa(unescape(encodeURIComponent(s.titel))).replace(/=/g, "");
-                
-                container.innerHTML += `
-                    <li class="song-card" data-title="${s.titel}">
-                        <div class="song-main">
-                            <span class="handle">☰</span>
-                            <span class="song-number">${i + 1}</span>
-                            <span class="song-title">${s.titel}</span>
-                        </div>
-                        <span id="btn-${safeTitle}" class="status-btn" onclick="toggleStatus('${safeTitle}')">❌</span>
-                    </li>
-                `;
-            });
-            loadStates();
-        }
-
-        // Berechnet die Nummern nach dem Verschieben live neu und speichert die Reihenfolge
-        function updateNumbersAndSaveOrder() {
-            const cards = container.querySelectorAll('.song-card');
-            const newOrder = [];
-            
-            cards.forEach((card, i) => {
-                card.querySelector('.song-number').innerText = i + 1;
-                newOrder.push({ titel: card.getAttribute('data-title') });
-            });
-            
-            songs = newOrder;
-            localStorage.setItem('fs-song-order', JSON.stringify(songs));
-        }
-
-        function toggleStatus(songId) {
-            const id = `btn-${songId}`;
-            const btn = document.getElementById(id);
-            
-            if (btn.innerHTML === "❌") {
-                btn.innerHTML = "✅";
-                localStorage.setItem(id, "checked");
-            } else {
-                btn.innerHTML = "❌";
-                localStorage.setItem(id, "unchecked");
-            }
-        }
-
-        function loadStates() {
-            songs.forEach((s) => {
-                const safeTitle = btoa(unescape(encodeURIComponent(s.titel))).replace(/=/g, "");
-                const id = `btn-${safeTitle}`;
-                const savedState = localStorage.getItem(id);
-                const btn = document.getElementById(id);
-                
-                if (btn) {
-                    if (savedState === "checked") {
-                        btn.innerHTML = "✅";
-                    } else {
-                        btn.innerHTML = "❌";
-                    }
-                }
-            });
-        }
-
-        Sortable.create(container, {
-            handle: '.handle',
-            animation: 220,
-            ghostClass: 'sortable-ghost',
-            onEnd: function () {
-                updateNumbersAndSaveOrder();
-            }
-        });
-
-        renderList();
-    </script>
-</body>
-</html>
+        <header
