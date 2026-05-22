@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fërkel Sharky - Setlist 2026</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --neon-pink: #ff71ce; 
@@ -71,7 +70,6 @@
             align-items: center;
             justify-content: space-between;
             backdrop-filter: blur(5px);
-            transition: transform 0.2s;
         }
 
         .song-main {
@@ -146,106 +144,115 @@
     </div>
 
     <script>
-        // Supabase Verbindungskonfiguration mit deinem Key
-        const SUPABASE_URL = "https://wpwljflkmlbyrkxlxrwf.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_beahjmAA-eKbVRy5K_Z8NQ_kMhJ8nG1";
+        const defaultSongs = [
+            {titel: "Don't Change"}, 
+            {titel: "Cities in Dust"}, 
+            {titel: "Hungry Like the Wolf"}, 
+            {titel: "Safety Dance"}, 
+            {titel: "Early Morning Wake Up Call"}, 
+            {titel: "A Forest"}, 
+            {titel: "I Ran"}, 
+            {titel: "Enola Gay"}, 
+            {titel: "You Spin Me Around"}, 
+            {titel: "You Keep Me Hanging On"}, 
+            {titel: "Touch Me"}, 
+            {titel: "Electricity"}, 
+            {titel: "Edge of Heaven"}
+        ];
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const container = document.getElementById('setlist-container');
-        let currentSongs = [];
+        
+        // Holt den alten Speicher
+        let savedOrder = localStorage.getItem('fs-song-order');
+        let songs;
 
-        // 1. Songs aus der Cloud laden
-        async function fetchSetlist() {
-            const { data, error } = await supabase
-                .from('setlist')
-                .select('*')
-                .order('position', { ascending: true });
-
-            if (error) console.error("Fehler beim Laden:", error);
-            if (data) {
-                currentSongs = data;
-                renderList();
+        if (savedOrder) {
+            try {
+                songs = JSON.parse(savedOrder);
+                // WICHTIG: Wenn die Anzahl der Lieder nicht übereinstimmt, löschen wir den alten Müll!
+                if (!Array.isArray(songs) || songs.length !== defaultSongs.length) {
+                    localStorage.removeItem('fs-song-order');
+                    songs = defaultSongs;
+                }
+            } catch(e) {
+                songs = defaultSongs;
             }
+        } else {
+            songs = defaultSongs;
         }
 
-        // 2. HTML-Struktur der Liste aufbauen
         function renderList() {
             container.innerHTML = "";
-            currentSongs.forEach((s, i) => {
-                const statusIcon = s.checked ? "✅" : "❌";
+            songs.forEach((s, i) => {
+                const safeTitle = btoa(unescape(encodeURIComponent(s.titel))).replace(/=/g, "");
+                
                 container.innerHTML += `
-                    <li class="song-card" data-id="${s.id}">
+                    <li class="song-card" data-title="${s.titel}">
                         <div class="song-main">
                             <span class="handle">☰</span>
                             <span class="song-number">${i + 1}</span>
                             <span class="song-title">${s.titel}</span>
                         </div>
-                        <span id="btn-${s.id}" class="status-btn" onclick="toggleCloudStatus('${s.id}', ${s.checked})">${statusIcon}</span>
+                        <span id="btn-${safeTitle}" class="status-btn" onclick="toggleStatus('${safeTitle}')">❌</span>
                     </li>
                 `;
             });
+            loadStates();
         }
 
-        // 3. Status sofort lokal umschalten und in die Cloud senden
-        async function toggleCloudStatus(id, currentStatus) {
-            const nextStatus = !currentStatus;
-            
-            // Sofortige visuelle Rückmeldung im Browser (optimistisches UI)
-            const btn = document.getElementById(`btn-${id}`);
-            if (btn) {
-                btn.innerHTML = nextStatus ? "✅" : "❌";
-                // Klick-Event aktualisieren, damit Folgeklicks stimmen
-                btn.setAttribute('onclick', `toggleCloudStatus('${id}', ${nextStatus})`);
-            }
-
-            // Update an Supabase senden
-            const { error } = await supabase
-                .from('setlist')
-                .update({ checked: nextStatus })
-                .eq('id', id);
-
-            if (error) console.error("Fehler beim Haken-Update:", error);
-        }
-
-        // 4. Neue Reihenfolge berechnen und in die Cloud schieben
-        async function saveCloudOrder() {
+        function updateNumbersAndSaveOrder() {
             const cards = container.querySelectorAll('.song-card');
+            const newOrder = [];
             
-            for (let i = 0; i < cards.length; i++) {
-                const id = cards[i].getAttribute('data-id');
-                cards[i].querySelector('.song-number').innerText = i + 1;
-                
-                await supabase
-                    .from('setlist')
-                    .update({ position: i + 1 })
-                    .eq('id', id);
+            cards.forEach((card, i) => {
+                card.querySelector('.song-number').innerText = i + 1;
+                newOrder.push({ titel: card.getAttribute('data-title') });
+            });
+            
+            songs = newOrder;
+            localStorage.setItem('fs-song-order', JSON.stringify(songs));
+        }
+
+        function toggleStatus(songId) {
+            const id = `btn-${songId}`;
+            const btn = document.getElementById(id);
+            
+            if (btn.innerHTML === "❌") {
+                btn.innerHTML = "✅";
+                localStorage.setItem(id, "checked");
+            } else {
+                btn.innerHTML = "❌";
+                localStorage.setItem(id, "unchecked");
             }
         }
 
-        // 5. ECHTZEIT-KANAL: Lauscht live auf Änderungen von anderen Geräten
-        supabase
-            .channel('schema-db-changes')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'setlist' },
-                () => {
-                    fetchSetlist(); // Liste sofort aktualisieren, wenn ein Bandkollege schiebt oder hakt
+        function loadStates() {
+            songs.forEach((s) => {
+                const safeTitle = btoa(unescape(encodeURIComponent(s.titel))).replace(/=/g, "");
+                const id = `btn-${safeTitle}`;
+                const savedState = localStorage.getItem(id);
+                const btn = document.getElementById(id);
+                
+                if (btn) {
+                    if (savedState === "checked") {
+                        btn.innerHTML = "✅";
+                    } else {
+                        btn.innerHTML = "❌";
+                    }
                 }
-            )
-            .subscribe();
+            });
+        }
 
-        // Drag & Drop aktivieren
         Sortable.create(container, {
             handle: '.handle',
             animation: 220,
             ghostClass: 'sortable-ghost',
             onEnd: function () {
-                saveCloudOrder();
+                updateNumbersAndSaveOrder();
             }
         });
 
-        // App starten
-        fetchSetlist();
+        renderList();
     </script>
 </body>
 </html>
