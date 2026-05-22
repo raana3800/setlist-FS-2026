@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fërkel Sharky - Setlist</title>
+    <title>Fërkel Sharky - Setlist 2026</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
@@ -46,11 +46,11 @@
         h2 {
             color: var(--neon-pink);
             text-align: center;
-            font-size: 1em;
+            font-size: 1.1em;
             letter-spacing: 2px;
             text-transform: uppercase;
             text-shadow: 0 0 8px var(--neon-pink);
-            margin: 0 0 20px 0;
+            margin: 0 0 25px 0;
         }
 
         #setlist-container {
@@ -59,13 +59,12 @@
             margin: 0;
         }
 
-        /* Komplett überarbeitete Kachel für Smartphones */
         .song-card {
             background: var(--card-bg);
             border: 1px solid var(--neon-blue);
             box-shadow: 0 0 8px rgba(1, 205, 254, 0.15);
             border-radius: 10px;
-            padding: 10px 12px;
+            padding: 14px 16px;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
@@ -73,71 +72,57 @@
             backdrop-filter: blur(5px);
         }
 
-        /* Linker Bereich: Grip + Titel */
         .song-main {
             display: flex;
             align-items: center;
             flex: 1;
-            min-width: 0; /* Verhindert das Abschneiden des Containers */
-            padding-right: 10px;
+            min-width: 0;
+            padding-right: 15px;
         }
 
         .handle {
             cursor: grab;
             color: #555;
-            font-size: 1.2em;
-            margin-right: 10px;
+            font-size: 1.3em;
+            margin-right: 12px;
             user-select: none;
             flex-shrink: 0;
         }
 
+        /* Die fortlaufende Nummer vor dem Titel */
+        .song-number {
+            color: var(--neon-pink);
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-right: 10px;
+            min-width: 25px;
+            flex-shrink: 0;
+        }
+
         .song-title {
-            font-size: 0.95em;
+            font-size: 1.05em;
             font-weight: 500;
-            white-space: normal; /* Erlaubt Zeilenumbruch bei sehr langen Titeln statt "..." */
+            white-space: normal; /* Erlaubt Umbruch, falls Nummer + Titel zu lang werden */
             word-break: break-word;
             color: #fff;
         }
 
-        /* Rechter Bereich: Kompakter Status-Block */
-        .status-group {
-            display: flex;
-            gap: 10px;
-            flex-shrink: 0; /* Verhindert, dass die Buttons gequetscht werden */
-        }
-
-        .status-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 42px;
-        }
-
-        /* Die interaktiven Symbole im Retro-Look */
         .status-btn {
-            font-size: 1.2em;
+            font-size: 1.4em;
             cursor: pointer;
             user-select: none;
-            width: 28px;
-            height: 28px;
+            width: 35px;
+            height: 35px;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
             transition: transform 0.1s;
         }
         
         .status-btn:active { 
             transform: scale(0.8); 
-        }
-
-        /* Kleine Beschriftung sauber darunter platziert */
-        .status-label {
-            font-size: 0.55em;
-            color: #888;
-            text-transform: uppercase;
-            margin-top: 3px;
-            letter-spacing: 0.3px;
-            text-align: center;
         }
 
         .sortable-ghost {
@@ -154,7 +139,7 @@
             <img src="logo.png" alt="Fërkel Sharky Logo">
         </header>
         
-        <h2>Fërkel Sharky Setlist</h2>
+        <h2>Setlist 2026</h2>
 
         <ul id="setlist-container"></ul>
     </div>
@@ -181,39 +166,32 @@
                     <li class="song-card" data-title="${s.titel}">
                         <div class="song-main">
                             <span class="handle">☰</span>
+                            <span class="song-number">${i + 1}</span>
                             <span class="song-title">${s.titel}</span>
                         </div>
-                        <div class="status-group">
-                            <div class="status-item">
-                                <span id="btn-${safeTitle}-ablauf" class="status-btn" onclick="toggleStatus('${safeTitle}', 'ablauf')">❌</span>
-                                <span class="status-label">Ablauf</span>
-                            </div>
-                            <div class="status-item">
-                                <span id="btn-${safeTitle}-sounds" class="status-btn" onclick="toggleStatus('${safeTitle}', 'sounds')">Sounds</span>
-                            </div>
-                            <div class="status-item">
-                                <span id="btn-${safeTitle}-drums" class="status-btn" onclick="toggleStatus('${safeTitle}', 'drums')">❌</span>
-                                <span class="status-label">Drums</span>
-                            </div>
-                        </div>
+                        <span id="btn-${safeTitle}" class="status-btn" onclick="toggleStatus('${safeTitle}')">❌</span>
                     </li>
                 `;
             });
             loadStates();
         }
 
-        function saveNewOrder() {
+        // Berechnet die Nummern nach dem Verschieben live neu und speichert die Reihenfolge
+        function updateNumbersAndSaveOrder() {
             const cards = container.querySelectorAll('.song-card');
             const newOrder = [];
-            cards.forEach(card => {
+            
+            cards.forEach((card, i) => {
+                card.querySelector('.song-number').innerText = i + 1;
                 newOrder.push({ titel: card.getAttribute('data-title') });
             });
+            
             songs = newOrder;
             localStorage.setItem('fs-song-order', JSON.stringify(songs));
         }
 
-        function toggleStatus(songId, type) {
-            const id = `btn-${songId}-${type}`;
+        function toggleStatus(songId) {
+            const id = `btn-${songId}`;
             const btn = document.getElementById(id);
             
             if (btn.innerHTML === "❌") {
@@ -225,25 +203,20 @@
             }
         }
 
-        // Korrektur: Lädt jetzt die Zustände absolut fehlerfrei für jede einzelne Kachel
         function loadStates() {
             songs.forEach((s) => {
                 const safeTitle = btoa(unescape(encodeURIComponent(s.titel))).replace(/=/g, "");
-                const types = ['ablauf', 'sounds', 'drums'];
+                const id = `btn-${safeTitle}`;
+                const savedState = localStorage.getItem(id);
+                const btn = document.getElementById(id);
                 
-                types.forEach(type => {
-                    const id = `btn-${safeTitle}-${type}`;
-                    const savedState = localStorage.getItem(id);
-                    const btn = document.getElementById(id);
-                    
-                    if (btn) {
-                        if (savedState === "checked") {
-                            btn.innerHTML = "✅";
-                        } else {
-                            btn.innerHTML = "❌";
-                        }
+                if (btn) {
+                    if (savedState === "checked") {
+                        btn.innerHTML = "✅";
+                    } else {
+                        btn.innerHTML = "❌";
                     }
-                });
+                }
             });
         }
 
@@ -252,7 +225,7 @@
             animation: 220,
             ghostClass: 'sortable-ghost',
             onEnd: function () {
-                saveNewOrder();
+                updateNumbersAndSaveOrder();
             }
         });
 
