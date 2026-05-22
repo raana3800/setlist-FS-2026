@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fërkel Sharky - Setlist 2026</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --neon-pink: #ff71ce; 
@@ -97,27 +96,30 @@
     </div>
 
     <script>
-        const SUPABASE_URL = "https://wpwljflkmlbyrkxlxrwf.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwd2xqZmxrbWxieXJreGx4cndmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjkyNzAsImV4cCI6MjA5NTA0NTI3MH0.wpe_2zuAsK5CmIeXtF3tOk9YrGuoqCKIetvzDvPJlf0";
+        // Reine HTTP-Endpunkte ohne blockierende Bibliotheken
+        const API_URL = "https://wpwljflkmlbyrkxlxrwf.supabase.co/rest/v1/setlist";
+        const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwd2xqZmxrbWxieXJreGx4cndmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjkyNzAsImV4cCI6MjA5NTA0NTI3MH0.wpe_2zuAsK5CmIeXtF3tOk9YrGuoqCKIetvzDvPJlf0";
 
-        // Minimalistische Standard-Initialisierung ohne blockierende Parameter
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
         const container = document.getElementById('setlist-container');
         let currentSongs = [];
         let isDragging = false;
 
-        // 1. Daten laden (Läuft immer, da keine Parameter blockieren)
+        // Standard-Header für alle Anfragen
+        const headers = {
+            "apikey": API_KEY,
+            "Authorization": `Bearer ${API_KEY}`,
+            "Content-Type": "application/json"
+        };
+
+        // 1. Daten direkt via HTTP laden
         async function fetchSetlist() {
             if (isDragging) return;
             try {
-                const { data, error } = await supabase
-                    .from('setlist')
-                    .select('*')
-                    .order('position', { ascending: true });
-
-                if (error) throw error;
-                if (data) {
+                const response = await fetch(`${API_URL}?select=*&order=position.asc`, { headers });
+                const data = await response.json();
+                
+                // Prüfen, ob sich wirklich was geändert hat, um nerviges Flackern zu verhindern
+                if (JSON.stringify(data) !== JSON.stringify(currentSongs)) {
                     currentSongs = data;
                     renderList();
                 }
@@ -126,7 +128,7 @@
             }
         }
 
-        // 2. UI rendern
+        // 2. UI aufbauen
         function renderList() {
             container.innerHTML = "";
             currentSongs.forEach((s, i) => {
@@ -144,7 +146,7 @@
             });
         }
 
-        // 3. Status umschalten (Optimistisch für sofortiges Feedback)
+        // 3. Status umschalten via HTTP PATCH
         async function toggleCloudStatus(id, currentStatus) {
             const nextStatus = !currentStatus;
             const btn = document.getElementById(`btn-${id}`);
@@ -153,13 +155,18 @@
                 btn.setAttribute('onclick', `toggleCloudStatus('${id}', ${nextStatus})`);
             }
 
-            await supabase
-                .from('setlist')
-                .update({ checked: nextStatus })
-                .eq('id', id);
+            try {
+                await fetch(`${API_URL}?id=eq.${id}`, {
+                    method: "PATCH",
+                    headers,
+                    body: JSON.stringify({ checked: nextStatus })
+                });
+            } catch (err) {
+                console.error("Fehler beim Status-Update:", err);
+            }
         }
 
-        // 4. Drag & Drop Positionen speichern
+        // 4. Reihenfolge speichern via HTTP PATCH
         async function saveCloudOrder() {
             isDragging = true;
             const cards = container.querySelectorAll('.song-card');
@@ -168,32 +175,26 @@
                 card.querySelector('.song-number').innerText = i + 1;
             });
 
-            for (let i = 0; i < cards.length; i++) {
-                const id = cards[i].getAttribute('data-id');
-                await supabase
-                    .from('setlist')
-                    .update({ position: i + 1 })
-                    .eq('id', id);
+            try {
+                for (let i = 0; i < cards.length; i++) {
+                    const id = cards[i].getAttribute('data-id');
+                    await fetch(`${API_URL}?id=eq.${id}`, {
+                        method: "PATCH",
+                        headers,
+                        body: JSON.stringify({ position: i + 1 })
+                    });
+                }
+            } catch (err) {
+                console.error("Fehler beim Positions-Update:", err);
             }
             isDragging = false;
+            fetchSetlist();
         }
 
-        // 5. Absolut stabiler Echtzeit-Sync über offizielle Kanäle
-        supabase
-            .channel('table-db-changes')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'setlist' },
-                (payload) => {
-                    // Verhindert ein Neuladen auf dem Gerät, das gerade selbst zieht
-                    if (!isDragging) {
-                        fetchSetlist();
-                    }
-                }
-            )
-            .subscribe();
+        // 5. Ultrasicheres Polling: Alle 2 Sekunden nach Updates fragen
+        setInterval(fetchSetlist, 2000);
 
-        // Drag & Drop Setup
+        // Sortable Setup
         Sortable.create(container, {
             handle: '.handle',
             animation: 220,
@@ -204,7 +205,7 @@
             }
         });
 
-        // App starten
+        // Direkt beim Start einmal ausführen
         fetchSetlist();
     </script>
 </body>
