@@ -8,97 +8,153 @@
     <style>
         :root { 
             --neon-pink: #ff71ce; 
-            --dark-bg: #0f0f1b; 
+            --neon-blue: #01cdfe;
+            --dark-bg: #0d0c1d; 
+            --card-bg: rgba(26, 26, 46, 0.7);
         }
+        
         body { 
             background-color: var(--dark-bg); 
+            /* Ein feines Retro-Gittermuster im Hintergrund */
+            background-image: 
+                linear-gradient(rgba(255, 113, 206, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 113, 206, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
             color: white; 
-            font-family: 'Courier New', monospace; 
-            padding: 20px; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            padding: 15px; 
             margin: 0;
+            display: flex;
+            justify-content: center;
         }
+
+        .container {
+            width: 100%;
+            max-width: 500px; /* Perfekte Breite für Smartphones und Tablets */
+        }
+
         header { 
             text-align: center; 
-            margin-bottom: 25px; 
+            margin-bottom: 10px; 
             margin-top: 10px;
         }
-        img { 
-            max-width: 220px; 
+
+        header img { 
+            max-width: 160px; 
             width: 100%;
             height: auto;
         }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            background: #1a1a2e; 
-            border: 2px solid var(--neon-pink); 
+
+        h2 {
+            color: var(--neon-pink);
+            text-align: center;
+            font-size: 1.1em;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px var(--neon-pink);
+            margin-top: 0;
+            margin-bottom: 25px;
         }
-        th { 
-            background: var(--neon-pink); 
-            color: var(--dark-bg); 
-            padding: 12px 8px; 
-            text-transform: uppercase; 
-            font-size: 0.85em; 
-            font-weight: bold;
+
+        /* Liste und die einzelnen Song-Kacheln */
+        #setlist-container {
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
-        td { 
-            border: 1px solid #333; 
-            padding: 12px 8px; 
-            color: #eee; 
-            text-align: center; 
+
+        .song-card {
+            background: var(--card-bg);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 10px rgba(1, 205, 254, 0.2);
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(5px);
         }
-        .song-title-cell { 
-            text-align: left; 
-        } 
-        /* Das Grip-Symbol */
+
+        .song-main {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        /* Grip-Symbol zum Verschieben */
         .handle {
             cursor: grab;
-            color: var(--neon-pink);
-            padding-right: 10px;
-            font-size: 1.2em;
-            display: inline-block;
+            color: #666;
+            font-size: 1.4em;
+            margin-right: 12px;
             user-select: none;
         }
-        .handle:active {
-            cursor: grabbing;
+        .handle:active { cursor: grabbing; }
+
+        .song-title {
+            font-size: 1em;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 10px;
         }
-        .status-cell {
+
+        /* Container für die drei Status-Buttons rechts */
+        .status-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 45px;
+        }
+
+        .status-label {
+            font-size: 0.6em;
+            color: #aaa;
+            text-transform: uppercase;
+            margin-top: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Der eigentliche interaktive Button (Haken/Kreuz) */
+        .status-btn {
             font-size: 1.3em;
             cursor: pointer;
-            user-select: none; 
-            transition: background-color 0.2s;
+            user-select: none;
+            transition: transform 0.1s ease;
         }
-        .status-cell:active {
-            background-color: #2a2a44; 
-        }
-        /* Highlight für die Zeile, die gerade bewegt wird */
+        .status-btn:active { transform: scale(0.85); }
+
+        /* Highlight für das Element, das gerade bewegt wird */
         .sortable-ghost {
-            opacity: 0.4;
-            background-color: var(--neon-pink) !important;
+            opacity: 0.3;
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 15px var(--neon-pink);
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <img src="logo.png" alt="Fërkel Sharky Logo">
-    </header>
+    <div class="container">
+        <header>
+            <img src="logo.png" alt="Fërkel Sharky Logo">
+        </header>
+        
+        <h2>Fërkel Sharky Setlist</h2>
 
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 50px;">#</th>
-                <th>Titel</th>
-                <th style="width: 90px;">Ablauf</th>
-                <th style="width: 90px;">Sounds</th>
-                <th style="width: 90px;">Drums</th>
-            </tr>
-        </thead>
-        <tbody id="setlist-body"></tbody>
-    </table>
+        <ul id="setlist-container">
+            </ul>
+    </div>
 
     <script>
-        // Start-Reihenfolge der Songs
+        // Deine vordefinierten Songs
         const defaultSongs = [
             {titel: "Take On Me"}, {titel: "Billie Jean"},
             {titel: "Girls Just Want To Have Fun"}, {titel: "Tainted Love"},
@@ -107,93 +163,99 @@
             {titel: "Time After Time"}, {titel: "Every Breath You Take"}
         ];
 
-        const tbody = document.getElementById('setlist-body');
+        const container = document.getElementById('setlist-container');
 
-        // 1. Reihenfolge laden (falls schon mal verschoben wurde)
-        let savedOrder = localStorage.getItem('song-order');
+        // Reihenfolge aus dem Speicher laden oder Standard nutzen
+        let savedOrder = localStorage.getItem('fs-song-order');
         let songs = savedOrder ? JSON.parse(savedOrder) : defaultSongs;
 
-        // Tabelle aufbauen
-        function renderTable() {
-            tbody.innerHTML = "";
+        // Oberfläche aufbauen
+        function renderList() {
+            container.innerHTML = "";
             songs.forEach((s, i) => {
-                // Eindeutige IDs basierend auf dem Songtitel generieren, damit der Haken beim Verschieben mitwandert
+                // Erzeugt eine sichere ID aus dem Songnamen für die Speicherstände
                 const safeTitle = btoa(unescape(encodeURIComponent(s.titel))).replace(/=/g, "");
                 
-                tbody.innerHTML += `
-                    <tr data-title="${s.titel}">
-                        <td class="row-number">${i + 1}</td>
-                        <td class="song-title-cell">
-                            <span class="handle">☰</span>${s.titel}
-                        </td>
-                        <td id="cell-${safeTitle}-ablauf" class="status-cell" onclick="toggleStatus('${safeTitle}', 'ablauf')">❌</td>
-                        <td id="cell-${safeTitle}-sounds" class="status-cell" onclick="toggleStatus('${safeTitle}', 'sounds')">❌</td>
-                        <td id="cell-${safeTitle}-drums" class="status-cell" onclick="toggleStatus('${safeTitle}', 'drums')">❌</td>
-                    </tr>
+                container.innerHTML += `
+                    <li class="song-card" data-title="${s.titel}">
+                        <div class="song-main">
+                            <span class="handle">☰</span>
+                            <span class="song-title">${s.titel}</span>
+                        </div>
+                        <div class="status-group">
+                            <div class="status-item">
+                                <span id="btn-${safeTitle}-ablauf" class="status-btn" onclick="toggleStatus('${safeTitle}', 'ablauf')">❌</span>
+                                <span class="status-label">Ablauf</span>
+                            </div>
+                            <div class="status-item">
+                                <span id="btn-${safeTitle}-sounds" class="status-btn" onclick="toggleStatus('${safeTitle}', 'sounds')">❌</span>
+                                <span class="status-label">Sounds</span>
+                            </div>
+                            <div class="status-item">
+                                <span id="btn-${safeTitle}-drums" class="status-btn" onclick="toggleStatus('${safeTitle}', 'drums')">Drums</span>
+                            </div>
+                        </div>
+                    </li>
                 `;
             });
             loadStates();
         }
 
-        // Nummern (1-10) nach dem Verschieben neu vergeben
-        function updateNumbersAndSaveOrder() {
-            const rows = tbody.querySelectorAll('tr');
+        // Speichert die neue Reihenfolge nach dem Verschieben
+        function saveNewOrder() {
+            const cards = container.querySelectorAll('.song-card');
             const newOrder = [];
-            
-            rows.forEach((row, i) => {
-                row.querySelector('.row-number').innerText = i + 1;
-                newOrder.push({ titel: row.getAttribute('data-title') });
+            cards.forEach(card => {
+                newOrder.push({ titel: card.getAttribute('data-title') });
             });
-            
             songs = newOrder;
-            localStorage.setItem('song-order', JSON.stringify(songs));
+            localStorage.setItem('fs-song-order', JSON.stringify(songs));
         }
 
-        // Haken umschalten
+        // Schaltet zwischen X und Haken um
         function toggleStatus(songId, type) {
-            const id = `cell-${songId}-${type}`;
-            const cell = document.getElementById(id);
+            const id = `btn-${songId}-${type}`;
+            const btn = document.getElementById(id);
             
-            if (cell.innerHTML === "❌") {
-                cell.innerHTML = "✅";
+            if (btn.innerHTML === "❌") {
+                btn.innerHTML = "✅";
                 localStorage.setItem(id, "checked");
             } else {
-                cell.innerHTML = "❌";
+                btn.innerHTML = "❌";
                 localStorage.setItem(id, "unchecked");
             }
         }
 
-        // Haken-Zustände laden
+        // Lädt den Haken-Status für alle Elemente aus dem Speicher
         function loadStates() {
             songs.forEach((s) => {
                 const safeTitle = btoa(unescape(encodeURIComponent(s.titel))).replace(/=/g, "");
                 const types = ['ablauf', 'sounds', 'drums'];
                 
                 types.forEach(type => {
-                    const id = `cell-${safeTitle}-type`;
-                    const storageId = `cell-${safeTitle}-${type}`;
-                    const savedState = localStorage.getItem(storageId);
-                    const cell = document.getElementById(storageId);
+                    const id = `btn-${safeTitle}-${type}`;
+                    const savedState = localStorage.getItem(id);
+                    const btn = document.getElementById(id);
                     
-                    if (cell && savedState === "checked") {
-                        cell.innerHTML = "✅";
+                    if (btn && savedState === "checked") {
+                        btn.innerHTML = "✅";
                     }
                 });
             });
         }
 
-        // Drag & Drop aktivieren (SortableJS)
-        Sortable.create(tbody, {
-            handle: '.handle', // Nur am ☰-Symbol greifbar
-            animation: 150,    // Schöne, flüssige Animation beim Verschieben
+        // SortableJS für die Liste aktivieren (wichtig für Touchgeräte)
+        Sortable.create(container, {
+            handle: '.handle',
+            animation: 200,
             ghostClass: 'sortable-ghost',
             onEnd: function () {
-                updateNumbersAndSaveOrder(); // Nach dem Drop: Nummern neu berechnen & Reihenfolge speichern
+                saveNewOrder();
             }
         });
 
-        // Initiales Laden der Tabelle
-        renderTable();
+        // App starten
+        renderList();
     </script>
 </body>
 </html>
