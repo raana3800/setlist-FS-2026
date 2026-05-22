@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fërkel Sharky - Setlist 2026</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --neon-pink: #ff71ce; 
@@ -28,21 +29,9 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        .container {
-            width: 100%;
-            max-width: 480px; 
-        }
-
-        header { 
-            text-align: center; 
-            margin: 15px 0 5px 0;
-        }
-
-        header img { 
-            max-width: 140px; 
-            height: auto;
-        }
-
+        .container { width: 100%; max-width: 480px; }
+        header { text-align: center; margin: 15px 0 5px 0; }
+        header img { max-width: 140px; height: auto; }
         h2 {
             color: var(--neon-pink);
             text-align: center;
@@ -53,11 +42,7 @@
             margin: 0 0 25px 0;
         }
 
-        #setlist-container {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+        #setlist-container { list-style: none; padding: 0; margin: 0; }
 
         .song-card {
             background: var(--card-bg);
@@ -72,23 +57,9 @@
             backdrop-filter: blur(5px);
         }
 
-        .song-main {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            min-width: 0;
-            padding-right: 15px;
-        }
-
-        .handle {
-            cursor: grab;
-            color: #555;
-            font-size: 1.3em;
-            margin-right: 12px;
-            user-select: none;
-            flex-shrink: 0;
-        }
-
+        .song-main { display: flex; align-items: center; flex: 1; min-width: 0; padding-right: 15px; }
+        .handle { cursor: grab; color: #555; font-size: 1.3em; margin-right: 12px; user-select: none; flex-shrink: 0; }
+        
         .song-number {
             color: var(--neon-pink);
             font-family: 'Courier New', monospace;
@@ -99,13 +70,7 @@
             flex-shrink: 0;
         }
 
-        .song-title {
-            font-size: 1.05em;
-            font-weight: 500;
-            white-space: normal;
-            word-break: break-word;
-            color: #fff;
-        }
+        .song-title { font-size: 1.05em; font-weight: 500; white-space: normal; word-break: break-word; color: #fff; }
 
         .status-btn {
             font-size: 1.4em;
@@ -119,140 +84,122 @@
             flex-shrink: 0;
             transition: transform 0.1s;
         }
-        
-        .status-btn:active { 
-            transform: scale(0.8); 
-        }
-
-        .sortable-ghost {
-            opacity: 0.3;
-            border-color: var(--neon-pink);
-            box-shadow: 0 0 12px var(--neon-pink);
-        }
+        .status-btn:active { transform: scale(0.8); }
+        .sortable-ghost { opacity: 0.3; border-color: var(--neon-pink); box-shadow: 0 0 12px var(--neon-pink); }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <header>
-            <img src="logo.png" alt="Fërkel Sharky Logo">
-        </header>
-        
+        <header><img src="logo.png" alt="Fërkel Sharky Logo"></header>
         <h2>Setlist 2026</h2>
-
         <ul id="setlist-container"></ul>
     </div>
 
     <script>
-        const defaultSongs = [
-            {titel: "Don't Change"}, 
-            {titel: "Cities in Dust"}, 
-            {titel: "Hungry Like the Wolf"}, 
-            {titel: "Safety Dance"}, 
-            {titel: "Early Morning Wake Up Call"}, 
-            {titel: "A Forest"}, 
-            {titel: "I Ran"}, 
-            {titel: "Enola Gay"}, 
-            {titel: "You Spin Me Around"}, 
-            {titel: "You Keep Me Hanging On"}, 
-            {titel: "Touch Me"}, 
-            {titel: "Electricity"}, 
-            {titel: "Edge of Heaven"}
-        ];
+        const SUPABASE_URL = "https://wpwljflkmlbyrkxlxrwf.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwd2xqZmxrbWxieXJreGx4cndmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjkyNzAsImV4cCI6MjA5NTA0NTI3MH0.wpe_2zuAsK5CmIeXtF3tOk9YrGuoqCKIetvzDvPJlf0";
 
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const container = document.getElementById('setlist-container');
-        
-        // Holt den alten Speicher
-        let savedOrder = localStorage.getItem('fs-song-order');
-        let songs;
+        let currentSongs = [];
+        let isDragging = false; // Blockiert Sync-Fehler während des Schiebens
 
-        if (savedOrder) {
+        // 1. Daten laden
+        async function fetchSetlist() {
+            if (isDragging) return;
             try {
-                songs = JSON.parse(savedOrder);
-                // WICHTIG: Wenn die Anzahl der Lieder nicht übereinstimmt, löschen wir den alten Müll!
-                if (!Array.isArray(songs) || songs.length !== defaultSongs.length) {
-                    localStorage.removeItem('fs-song-order');
-                    songs = defaultSongs;
+                const { data, error } = await supabase
+                    .from('setlist')
+                    .select('*')
+                    .order('position', { ascending: true });
+
+                if (error) throw error;
+                if (data) {
+                    currentSongs = data;
+                    renderList();
                 }
-            } catch(e) {
-                songs = defaultSongs;
+            } catch (err) {
+                console.error("Fehler beim Abruf:", err);
             }
-        } else {
-            songs = defaultSongs;
         }
 
+        // 2. Liste bauen
         function renderList() {
             container.innerHTML = "";
-            songs.forEach((s, i) => {
-                const safeTitle = btoa(unescape(encodeURIComponent(s.titel))).replace(/=/g, "");
-                
+            currentSongs.forEach((s, i) => {
+                const statusIcon = s.checked ? "✅" : "❌";
                 container.innerHTML += `
-                    <li class="song-card" data-title="${s.titel}">
+                    <li class="song-card" data-id="${s.id}">
                         <div class="song-main">
                             <span class="handle">☰</span>
                             <span class="song-number">${i + 1}</span>
                             <span class="song-title">${s.titel}</span>
                         </div>
-                        <span id="btn-${safeTitle}" class="status-btn" onclick="toggleStatus('${safeTitle}')">❌</span>
+                        <span id="btn-${s.id}" class="status-btn" onclick="toggleCloudStatus('${s.id}', ${s.checked})">${statusIcon}</span>
                     </li>
                 `;
             });
-            loadStates();
         }
 
-        function updateNumbersAndSaveOrder() {
-            const cards = container.querySelectorAll('.song-card');
-            const newOrder = [];
-            
-            cards.forEach((card, i) => {
-                card.querySelector('.song-number').innerText = i + 1;
-                newOrder.push({ titel: card.getAttribute('data-title') });
-            });
-            
-            songs = newOrder;
-            localStorage.setItem('fs-song-order', JSON.stringify(songs));
-        }
-
-        function toggleStatus(songId) {
-            const id = `btn-${songId}`;
-            const btn = document.getElementById(id);
-            
-            if (btn.innerHTML === "❌") {
-                btn.innerHTML = "✅";
-                localStorage.setItem(id, "checked");
-            } else {
-                btn.innerHTML = "❌";
-                localStorage.setItem(id, "unchecked");
+        // 3. Haken sofort umschalten & in Cloud speichern
+        async function toggleCloudStatus(id, currentStatus) {
+            const nextStatus = !currentStatus;
+            const btn = document.getElementById(`btn-${id}`);
+            if (btn) {
+                btn.innerHTML = nextStatus ? "✅" : "❌";
+                btn.setAttribute('onclick', `toggleCloudStatus('${id}', ${nextStatus})`);
             }
+
+            await supabase
+                .from('setlist')
+                .update({ checked: nextStatus })
+                .eq('id', id);
         }
 
-        function loadStates() {
-            songs.forEach((s) => {
-                const safeTitle = btoa(unescape(encodeURIComponent(s.titel))).replace(/=/g, "");
-                const id = `btn-${safeTitle}`;
-                const savedState = localStorage.getItem(id);
-                const btn = document.getElementById(id);
+        // 4. Positionen updaten
+        async function saveCloudOrder() {
+            isDragging = true;
+            const cards = container.querySelectorAll('.song-card');
+            
+            for (let i = 0; i < cards.length; i++) {
+                const id = cards[i].getAttribute('data-id');
+                cards[i].querySelector('.song-number').innerText = i + 1;
                 
-                if (btn) {
-                    if (savedState === "checked") {
-                        btn.innerHTML = "✅";
-                    } else {
-                        btn.innerHTML = "❌";
-                    }
-                }
-            });
+                await supabase
+                    .from('setlist')
+                    .update({ position: i + 1 })
+                    .eq('id', id);
+            }
+            isDragging = false;
         }
 
+        // 5. ZWINGENDER REALTIME SYNC (Broadcast & Postgres Changes kombiniert)
+        supabase
+            .channel('public:setlist')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'setlist' },
+                () => {
+                    fetchSetlist();
+                }
+            )
+            .subscribe((status) => {
+                console.log("Realtime Status:", status);
+            });
+
+        // Sortable Setup
         Sortable.create(container, {
             handle: '.handle',
             animation: 220,
             ghostClass: 'sortable-ghost',
+            onChoose: () => { isDragging = true; },
             onEnd: function () {
-                updateNumbersAndSaveOrder();
+                saveCloudOrder();
             }
         });
 
-        renderList();
+        fetchSetlist();
     </script>
 </body>
 </html>
