@@ -9,11 +9,10 @@
         header { text-align: center; margin-bottom: 30px; }
         img { max-width: 250px; filter: drop-shadow(0 0 10px var(--neon-pink)); }
         table { width: 100%; border-collapse: collapse; background: #1a1a2e; border: 2px solid var(--neon-pink); }
-        th { background: var(--neon-pink); color: var(--dark-bg); padding: 12px; text-transform: uppercase; }
-        td { border: 1px solid #333; padding: 10px; color: #eee; }
-        .checkbox-group { display: flex; gap: 8px; justify-content: center; }
-        input[type="checkbox"] { transform: scale(1.5); accent-color: var(--neon-pink); }
-        @media (max-width: 600px) { th:nth-child(3), td:nth-child(3) { display: none; } }
+        th { background: var(--neon-pink); color: var(--dark-bg); padding: 10px; text-transform: uppercase; font-size: 0.8em; }
+        td { border: 1px solid #333; padding: 10px; color: #eee; text-align: center; }
+        td:nth-child(2) { text-align: left; } /* Titel linksbündig für bessere Lesbarkeit */
+        input[type="checkbox"] { transform: scale(1.3); accent-color: var(--neon-pink); }
     </style>
 </head>
 <body>
@@ -24,7 +23,10 @@
 
     <table>
         <thead>
-            <tr><th>#</th><th>Titel</th><th>BPM</th><th>Check</th></tr>
+            <tr>
+                <th>#</th><th>Titel</th><th>BPM</th>
+                <th>Ablauf</th><th>Sounds</th><th>Drums</th>
+            </tr>
         </thead>
         <tbody id="setlist-body"></tbody>
     </table>
@@ -41,7 +43,7 @@
         songs.forEach((s, i) => {
             tbody.innerHTML += `<tr>
                 <td>${i + 1}</td><td>${s.titel}</td><td>${s.bpm}</td>
-                <td class="checkbox-group"><input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox"></td>
+                <td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>
             </tr>`;
         });
     </script>
