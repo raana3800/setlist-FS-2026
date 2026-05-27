@@ -9,7 +9,7 @@
         :root { 
             --neon-pink: #ff71ce; 
             --neon-blue: #01cdfe;
-            --neon-green: #05ffa1; /* Passendes Cyberpunk-Grün */
+            --neon-green: #05ffa1;
             --dark-bg: #0d0c1d; 
             --card-bg: rgba(26, 26, 46, 0.8);
         }
@@ -72,7 +72,6 @@
 
         .song-title { font-size: 1.05em; font-weight: 500; white-space: normal; word-break: break-word; color: #fff; }
 
-        /* Container für die 3 neuen Buttons */
         .status-group {
             display: flex;
             gap: 8px;
@@ -94,19 +93,16 @@
             transition: transform 0.1s, border-color 0.2s, box-shadow 0.2s;
         }
         
-        /* Rot-Zustand (Neon Pink) */
         .status-btn.state-false {
             border-color: rgba(255, 113, 206, 0.3);
             box-shadow: inset 0 0 4px rgba(255, 113, 206, 0.2);
-            filter: grayscale(0.8) opacity(0.5); /* Macht das Emoji im "Aus"-Zustand dezenter */
+            filter: grayscale(0.8) opacity(0.5);
         }
 
-        /* Grün-Zustand (Neon Grün) */
         .status-btn.state-true {
             border-color: var(--neon-green);
-            box-shrink: 0;
             box-shadow: 0 0 8px rgba(5, 255, 161, 0.4), inset 0 0 4px rgba(5, 255, 161, 0.2);
-            filter: none; /* Volle Farbe fürs Emoji */
+            filter: none;
         }
 
         .status-btn:active { transform: scale(0.8); }
@@ -135,7 +131,6 @@
             "Content-Type": "application/json"
         };
 
-        // 1. Daten via HTTP laden
         async function fetchSetlist() {
             if (isDragging) return;
             try {
@@ -151,11 +146,9 @@
             }
         }
 
-        // 2. UI mit 3 Status-Buttons aufbauen
         function renderList() {
             container.innerHTML = "";
             currentSongs.forEach((s, i) => {
-                // Fallback auf false, falls die Spalten in der DB noch leer (null) sind
                 const statusAblauf = s.status_ablauf || false;
                 const statusKeyboard = s.status_keyboard || false;
                 const statusDrums = s.status_drums || false;
@@ -169,7 +162,7 @@
                         </div>
                         <div class="status-group">
                             <button id="btn-ablauf-${s.id}" class="status-btn state-${statusAblauf}" 
-                                onclick="toggleCloudStatus('${s.id}', 'status_ablauf', ${statusAblauf})" title="Ablauf">🔄</button>
+                                onclick="toggleCloudStatus('${s.id}', 'status_ablauf', ${statusAblauf})" title="Ablauf">📋</button>
                             
                             <button id="btn-kybd-${s.id}" class="status-btn state-${statusKeyboard}" 
                                 onclick="toggleCloudStatus('${s.id}', 'status_keyboard', ${statusKeyboard})" title="Keyboard">🎹</button>
@@ -182,11 +175,9 @@
             });
         }
 
-        // 3. Status für eine bestimmte Spalte umschalten via HTTP PATCH
         async function toggleCloudStatus(id, column, currentStatus) {
             const nextStatus = !currentStatus;
             
-            // UI-Präfix ermitteln, um den richtigen Button sofort visuell umzuschalten
             let btnId = `btn-ablauf-${id}`;
             if (column === 'status_keyboard') btnId = `btn-kybd-${id}`;
             if (column === 'status_drums') btnId = `btn-drums-${id}`;
@@ -198,7 +189,6 @@
             }
 
             try {
-                // Dynamischer Spaltenname im Body
                 const updateBody = {};
                 updateBody[column] = nextStatus;
 
@@ -212,7 +202,6 @@
             }
         }
 
-        // 4. Reihenfolge speichern via HTTP PATCH
         async function saveCloudOrder() {
             isDragging = true;
             const cards = container.querySelectorAll('.song-card');
@@ -237,10 +226,8 @@
             fetchSetlist();
         }
 
-        // 5. Polling alle 2 Sekunden
         setInterval(fetchSetlist, 2000);
 
-        // Sortable Setup
         Sortable.create(container, {
             handle: '.handle',
             animation: 220,
@@ -251,7 +238,6 @@
             }
         });
 
-        // Start
         fetchSetlist();
     </script>
 </body>
