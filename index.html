@@ -9,6 +9,7 @@
         :root { 
             --neon-pink: #ff71ce; 
             --neon-blue: #01cdfe;
+            --neon-green: #05ffa1; /* Passendes Cyberpunk-Grün */
             --dark-bg: #0d0c1d; 
             --card-bg: rgba(26, 26, 46, 0.8);
         }
@@ -56,7 +57,7 @@
             backdrop-filter: blur(5px);
         }
 
-        .song-main { display: flex; align-items: center; flex: 1; min-width: 0; padding-right: 15px; }
+        .song-main { display: flex; align-items: center; flex: 1; min-width: 0; padding-right: 10px; }
         .handle { cursor: grab; color: #555; font-size: 1.3em; margin-right: 12px; user-select: none; flex-shrink: 0; }
         
         .song-number {
@@ -71,18 +72,43 @@
 
         .song-title { font-size: 1.05em; font-weight: 500; white-space: normal; word-break: break-word; color: #fff; }
 
+        /* Container für die 3 neuen Buttons */
+        .status-group {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
         .status-btn {
-            font-size: 1.4em;
+            font-size: 1.2em;
             cursor: pointer;
             user-select: none;
-            width: 35px;
-            height: 35px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
-            transition: transform 0.1s;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
+            transition: transform 0.1s, border-color 0.2s, box-shadow 0.2s;
         }
+        
+        /* Rot-Zustand (Neon Pink) */
+        .status-btn.state-false {
+            border-color: rgba(255, 113, 206, 0.3);
+            box-shadow: inset 0 0 4px rgba(255, 113, 206, 0.2);
+            filter: grayscale(0.8) opacity(0.5); /* Macht das Emoji im "Aus"-Zustand dezenter */
+        }
+
+        /* Grün-Zustand (Neon Grün) */
+        .status-btn.state-true {
+            border-color: var(--neon-green);
+            box-shrink: 0;
+            box-shadow: 0 0 8px rgba(5, 255, 161, 0.4), inset 0 0 4px rgba(5, 255, 161, 0.2);
+            filter: none; /* Volle Farbe fürs Emoji */
+        }
+
         .status-btn:active { transform: scale(0.8); }
         .sortable-ghost { opacity: 0.3; border-color: var(--neon-pink); box-shadow: 0 0 12px var(--neon-pink); }
     </style>
@@ -96,7 +122,6 @@
     </div>
 
     <script>
-        // Reine HTTP-Endpunkte ohne blockierende Bibliotheken
         const API_URL = "https://wpwljflkmlbyrkxlxrwf.supabase.co/rest/v1/setlist";
         const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwd2xqZmxrbWxieXJreGx4cndmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjkyNzAsImV4cCI6MjA5NTA0NTI3MH0.wpe_2zuAsK5CmIeXtF3tOk9YrGuoqCKIetvzDvPJlf0";
 
@@ -104,21 +129,19 @@
         let currentSongs = [];
         let isDragging = false;
 
-        // Standard-Header für alle Anfragen
         const headers = {
             "apikey": API_KEY,
             "Authorization": `Bearer ${API_KEY}`,
             "Content-Type": "application/json"
         };
 
-        // 1. Daten direkt via HTTP laden
+        // 1. Daten via HTTP laden
         async function fetchSetlist() {
             if (isDragging) return;
             try {
                 const response = await fetch(`${API_URL}?select=*&order=position.asc`, { headers });
                 const data = await response.json();
                 
-                // Prüfen, ob sich wirklich was geändert hat, um nerviges Flackern zu verhindern
                 if (JSON.stringify(data) !== JSON.stringify(currentSongs)) {
                     currentSongs = data;
                     renderList();
@@ -128,11 +151,15 @@
             }
         }
 
-        // 2. UI aufbauen
+        // 2. UI mit 3 Status-Buttons aufbauen
         function renderList() {
             container.innerHTML = "";
             currentSongs.forEach((s, i) => {
-                const statusIcon = s.checked ? "✅" : "❌";
+                // Fallback auf false, falls die Spalten in der DB noch leer (null) sind
+                const statusAblauf = s.status_ablauf || false;
+                const statusKeyboard = s.status_keyboard || false;
+                const statusDrums = s.status_drums || false;
+
                 container.innerHTML += `
                     <li class="song-card" data-id="${s.id}">
                         <div class="song-main">
@@ -140,29 +167,48 @@
                             <span class="song-number">${i + 1}</span>
                             <span class="song-title">${s.titel}</span>
                         </div>
-                        <span id="btn-${s.id}" class="status-btn" onclick="toggleCloudStatus('${s.id}', ${s.checked})">${statusIcon}</span>
+                        <div class="status-group">
+                            <button id="btn-ablauf-${s.id}" class="status-btn state-${statusAblauf}" 
+                                onclick="toggleCloudStatus('${s.id}', 'status_ablauf', ${statusAblauf})" title="Ablauf">🔄</button>
+                            
+                            <button id="btn-kybd-${s.id}" class="status-btn state-${statusKeyboard}" 
+                                onclick="toggleCloudStatus('${s.id}', 'status_keyboard', ${statusKeyboard})" title="Keyboard">🎹</button>
+                            
+                            <button id="btn-drums-${s.id}" class="status-btn state-${statusDrums}" 
+                                onclick="toggleCloudStatus('${s.id}', 'status_drums', ${statusDrums})" title="Drums">🥁</button>
+                        </div>
                     </li>
                 `;
             });
         }
 
-        // 3. Status umschalten via HTTP PATCH
-        async function toggleCloudStatus(id, currentStatus) {
+        // 3. Status für eine bestimmte Spalte umschalten via HTTP PATCH
+        async function toggleCloudStatus(id, column, currentStatus) {
             const nextStatus = !currentStatus;
-            const btn = document.getElementById(`btn-${id}`);
+            
+            // UI-Präfix ermitteln, um den richtigen Button sofort visuell umzuschalten
+            let btnId = `btn-ablauf-${id}`;
+            if (column === 'status_keyboard') btnId = `btn-kybd-${id}`;
+            if (column === 'status_drums') btnId = `btn-drums-${id}`;
+
+            const btn = document.getElementById(btnId);
             if (btn) {
-                btn.innerHTML = nextStatus ? "✅" : "❌";
-                btn.setAttribute('onclick', `toggleCloudStatus('${id}', ${nextStatus})`);
+                btn.className = `status-btn state-${nextStatus}`;
+                btn.setAttribute('onclick', `toggleCloudStatus('${id}', '${column}', ${nextStatus})`);
             }
 
             try {
+                // Dynamischer Spaltenname im Body
+                const updateBody = {};
+                updateBody[column] = nextStatus;
+
                 await fetch(`${API_URL}?id=eq.${id}`, {
                     method: "PATCH",
                     headers,
-                    body: JSON.stringify({ checked: nextStatus })
+                    body: JSON.stringify(updateBody)
                 });
             } catch (err) {
-                console.error("Fehler beim Status-Update:", err);
+                console.error(`Fehler beim Update von ${column}:`, err);
             }
         }
 
@@ -191,7 +237,7 @@
             fetchSetlist();
         }
 
-        // 5. Ultrasicheres Polling: Alle 2 Sekunden nach Updates fragen
+        // 5. Polling alle 2 Sekunden
         setInterval(fetchSetlist, 2000);
 
         // Sortable Setup
@@ -205,7 +251,7 @@
             }
         });
 
-        // Direkt beim Start einmal ausführen
+        // Start
         fetchSetlist();
     </script>
 </body>
